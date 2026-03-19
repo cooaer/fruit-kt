@@ -1,0 +1,42 @@
+# Gradle
+.gradle/
+build/
+
+# Kotlin / KMP
+.kotlin/
+kotlin-js-store/
+
+# Android
+local.properties
+.externalNativeBuild/
+.cxx/
+*.keystore
+*.jks
+*.apk
+*.aar
+
+# IntelliJ IDEA
+.idea/modules.xml
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/navEditor.xml
+.idea/assetWizard.settings.xml
+.idea/dictionaries/
+.idea/libraries/
+.idea/caches/
+.idea/shelf/
+.idea/runConfigurations.xml
+*.iml
+*.iws
+
+# iOS / Xcode
+*.xcworkspace/
+*.xcodeproj/
+DerivedData/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# KSP Generated (Included in build/, but explicitly listed for clarity)
+build/generated/ksp/
