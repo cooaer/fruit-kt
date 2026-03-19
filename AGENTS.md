@@ -20,7 +20,7 @@
 ### 3. 模块结构
 - **根目录 (`:`)**：包含通用多平台逻辑、注解 (`@Pick`) 和 `Fruit` 入口点。
 - **`:fruit-ksp`**：代码生成器。生成 `*PickAdapter` 类和全局 `registerGeneratedAdapters()` 扩展函数。
-- **`:converter-retrofit`**：针对 Android 的 Retrofit 适配器。
+- **`:fruit-converter-retrofit`**：针对 Android 的 Retrofit 适配器。
 
 ## 核心 API 与用法
 
