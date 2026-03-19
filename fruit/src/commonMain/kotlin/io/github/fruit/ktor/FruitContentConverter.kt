@@ -9,6 +9,7 @@ import io.ktor.util.reflect.*
 import io.ktor.utils.io.*
 import io.ktor.utils.io.charsets.*
 import io.github.fruit.Fruit
+import io.ktor.utils.io.core.*
 import kotlin.reflect.KClass
 
 class FruitContentConverter(private val fruit: Fruit) : ContentConverter {
@@ -18,9 +19,10 @@ class FruitContentConverter(private val fruit: Fruit) : ContentConverter {
         typeInfo: TypeInfo,
         content: ByteReadChannel
     ): Any? {
-        val html = content.readRemaining().readText(charset)
-        @Suppress("UNCHECKED_CAST")
-        val clazz = typeInfo.type as KClass<Any>
+        val packet = content.readRemaining()
+        val html = packet.readText(charset = charset)
+        
+        val clazz = typeInfo.type
         return fruit.fromHtml(html, clazz)
     }
 

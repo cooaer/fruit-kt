@@ -33,7 +33,7 @@ class Fruit(
         if (cached != null) return cached as PickAdapter<T>
 
         for (factory in factories) {
-            val adapter = factory.create<T>(this, clazz)
+            val adapter = factory.create(this, clazz)
             if (adapter != null) {
                 adapterCache[clazz] = adapter
                 return adapter
@@ -54,6 +54,6 @@ interface PickAdapter<T> {
     fun read(element: Element, pick: Pick? = null): T?
 }
 
-fun interface PickAdapterFactory {
-    fun <T> create(fruit: Fruit, type: Any): PickAdapter<T>?
+interface PickAdapterFactory {
+    fun <T : Any> create(fruit: Fruit, clazz: KClass<T>): PickAdapter<T>?
 }

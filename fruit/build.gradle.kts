@@ -1,7 +1,7 @@
 plugins {
-    kotlin("multiplatform") version "1.9.22"
-    id("com.android.library") version "8.2.2"
-    id("com.google.devtools.ksp") version "1.9.22-1.0.17"
+    kotlin("multiplatform")
+    id("com.android.library")
+    id("com.google.devtools.ksp")
 }
 
 kotlin {
@@ -16,6 +16,11 @@ kotlin {
                 implementation("com.fleeksoft.ksoup:ksoup:0.1.0")
                 implementation("io.ktor:ktor-client-core:2.3.7")
                 implementation("io.ktor:ktor-client-content-negotiation:2.3.7")
+            }
+        }
+        val commonTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
             }
         }
     }

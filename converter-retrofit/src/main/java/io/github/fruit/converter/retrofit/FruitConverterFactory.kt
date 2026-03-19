@@ -13,28 +13,28 @@ class FruitConverterFactory(private val fruit: Fruit) : Converter.Factory() {
         type: Type,
         annotations: Array<Annotation>,
         retrofit: Retrofit
-    ): Converter<ResponseBody, *> {
-        return FruitResponseBodyConverter(fruit, type)
+    ): Converter<ResponseBody, *>? {
+        val rawType = type as? Class<*> ?: return null
+        @Suppress("UNCHECKED_CAST")
+        val clazz = rawType.kotlin as KClass<Any>
+        return FruitResponseBodyConverter(fruit, clazz)
     }
 
     companion object {
+        @JvmStatic
         fun create(fruit: Fruit): FruitConverterFactory {
             return FruitConverterFactory(fruit)
         }
     }
 }
 
-class FruitResponseBodyConverter<T>(
+class FruitResponseBodyConverter<T : Any>(
     private val fruit: Fruit,
-    private val type: Type
+    private val clazz: KClass<T>
 ) : Converter<ResponseBody, T> {
 
     override fun convert(value: ResponseBody): T? {
         val html = value.string()
-        @Suppress("UNCHECKED_CAST")
-        val clazz = (type as? Class<*>)?.kotlin as? KClass<Any>
-            ?: throw IllegalArgumentException("Fruit converter only supports direct class binding currently.")
-        
-        return fruit.fromHtml(html, clazz) as? T
+        return fruit.fromHtml(html, clazz)
     }
 }
