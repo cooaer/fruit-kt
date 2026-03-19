@@ -1,7 +1,9 @@
 plugins {
     id("com.android.library")
-    kotlin("android")
 }
+
+group = "io.github.fruit"
+version = "1.0.0"
 
 android {
     namespace = "io.github.fruit.converter.retrofit"

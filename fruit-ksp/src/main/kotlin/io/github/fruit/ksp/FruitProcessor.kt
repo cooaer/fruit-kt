@@ -13,31 +13,42 @@ class FruitProcessor(
     private val logger: KSPLogger
 ) : SymbolProcessor {
 
-    private val processedClasses = mutableListOf<KSClassDeclaration>()
+    private val processedQualifiedNames = mutableSetOf<String>()
+    private val classesToRegister = mutableListOf<KSClassDeclaration>()
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
         val symbols = resolver.getSymbolsWithAnnotation("io.github.fruit.annotations.Pick")
-        val classesToProcess = symbols
+        
+        val classesFromProperties = symbols
             .filterIsInstance<KSPropertyDeclaration>()
             .mapNotNull { it.parentDeclaration as? KSClassDeclaration }
-            .toSet()
+        
+        val classesFromClassAnnotations = symbols
+            .filterIsInstance<KSClassDeclaration>()
 
-        classesToProcess.forEach { 
-            generateAdapter(it)
-            processedClasses.add(it)
+        val classesInThisRound = (classesFromProperties + classesFromClassAnnotations).toSet()
+        
+        classesInThisRound.forEach { clazz ->
+            val qualifiedName = clazz.qualifiedName?.asString() ?: return@forEach
+            if (qualifiedName !in processedQualifiedNames) {
+                generateAdapter(clazz)
+                processedQualifiedNames.add(qualifiedName)
+                classesToRegister.add(clazz)
+            }
         }
+        
         return emptyList()
     }
 
     override fun finish() {
-        if (processedClasses.isEmpty()) return
+        if (classesToRegister.isEmpty()) return
         generateRegistry()
     }
 
     private fun generateAdapter(classDeclaration: KSClassDeclaration) {
         val packageName = classDeclaration.packageName.asString()
-        val className = classDeclaration.simpleName.asString()
-        val adapterName = "${className}PickAdapter"
+        val fullName = getFullSimpleName(classDeclaration)
+        val adapterName = "${fullName}PickAdapter"
 
         val fileSpec = FileSpec.builder(packageName, adapterName)
             .addImport("io.github.fruit.annotations", "Pick")
@@ -63,11 +74,32 @@ class FruitProcessor(
         fileSpec.writeTo(codeGenerator, Dependencies(false, classDeclaration.containingFile!!))
     }
 
+    private fun getFullSimpleName(classDeclaration: KSClassDeclaration): String {
+        val names = mutableListOf<String>()
+        var current: KSDeclaration? = classDeclaration
+        while (current is KSClassDeclaration) {
+            names.add(0, current.simpleName.asString())
+            current = current.parentDeclaration
+        }
+        return names.joinToString("_")
+    }
+
     private fun generateReadLogic(classDeclaration: KSClassDeclaration): CodeBlock {
         val builder = CodeBlock.builder()
         val className = classDeclaration.toClassName()
         
         builder.addStatement("var currentElement = element")
+        
+        val classPick = classDeclaration.annotations.find { 
+            it.annotationType.resolve().declaration.qualifiedName?.asString() == "io.github.fruit.annotations.Pick" 
+        }
+        if (classPick != null) {
+            val cssValue = classPick.arguments.find { it.name?.asString() == "value" }?.value as? String ?: ""
+            if (cssValue.isNotEmpty()) {
+                builder.addStatement("currentElement = element.selectFirst(%S) ?: return null", cssValue)
+            }
+        }
+
         builder.add("return %T(\n", className)
         builder.indent()
         
@@ -96,16 +128,16 @@ class FruitProcessor(
     }
 
     private fun generateReadForType(builder: CodeBlock.Builder, type: KSType, css: String, attr: String, ownText: Boolean) {
-        val qualifiedName = type.declaration.qualifiedName?.asString()
+        val qualifiedName = type.declaration.qualifiedName?.asString() ?: ""
         val pickExpr = "Pick(value = %S, attr = %S, ownText = %L)"
 
-        when (qualifiedName) {
-            "kotlin.String" -> builder.add("io.github.fruit.bind.BasicPickAdapters.STRING_ADAPTER.read(currentElement, $pickExpr) ?: \"\"", css, attr, ownText)
-            "kotlin.Int" -> builder.add("io.github.fruit.bind.BasicPickAdapters.INT_ADAPTER.read(currentElement, $pickExpr) ?: 0", css, attr, ownText)
-            "kotlin.Long" -> builder.add("io.github.fruit.bind.BasicPickAdapters.LONG_ADAPTER.read(currentElement, $pickExpr) ?: 0L", css, attr, ownText)
-            "kotlin.Float" -> builder.add("io.github.fruit.bind.BasicPickAdapters.FLOAT_ADAPTER.read(currentElement, $pickExpr) ?: 0.0f", css, attr, ownText)
-            "kotlin.Boolean" -> builder.add("io.github.fruit.bind.BasicPickAdapters.BOOLEAN_ADAPTER.read(currentElement, $pickExpr) ?: false", css, attr, ownText)
-            "kotlin.collections.List" -> {
+        when {
+            qualifiedName == "kotlin.String" -> builder.add("io.github.fruit.bind.BasicPickAdapters.STRING_ADAPTER.read(currentElement, $pickExpr) ?: \"\"", css, attr, ownText)
+            qualifiedName == "kotlin.Int" -> builder.add("io.github.fruit.bind.BasicPickAdapters.INT_ADAPTER.read(currentElement, $pickExpr) ?: 0", css, attr, ownText)
+            qualifiedName == "kotlin.Long" -> builder.add("io.github.fruit.bind.BasicPickAdapters.LONG_ADAPTER.read(currentElement, $pickExpr) ?: 0L", css, attr, ownText)
+            qualifiedName == "kotlin.Float" -> builder.add("io.github.fruit.bind.BasicPickAdapters.FLOAT_ADAPTER.read(currentElement, $pickExpr) ?: 0.0f", css, attr, ownText)
+            qualifiedName == "kotlin.Boolean" -> builder.add("io.github.fruit.bind.BasicPickAdapters.BOOLEAN_ADAPTER.read(currentElement, $pickExpr) ?: false", css, attr, ownText)
+            qualifiedName == "kotlin.collections.List" || qualifiedName == "kotlin.collections.MutableList" -> {
                 val elementType = type.arguments.firstOrNull()?.type?.resolve()
                 if (elementType != null) {
                     builder.add("currentElement.select(%S).map { ", css)
@@ -116,8 +148,9 @@ class FruitProcessor(
                 }
             }
             else -> {
-                val nestedClassName = type.declaration.simpleName.asString()
-                val adapterName = "${nestedClassName}PickAdapter"
+                val nestedClass = type.declaration as? KSClassDeclaration
+                val nestedFullName = if (nestedClass != null) getFullSimpleName(nestedClass) else type.declaration.simpleName.asString()
+                val adapterName = "${nestedFullName}PickAdapter"
                 builder.add("%T().read(currentElement.selectFirst(%S) ?: currentElement, null)!!", 
                     ClassName(type.declaration.packageName.asString(), adapterName), css)
             }
@@ -130,10 +163,10 @@ class FruitProcessor(
                 FunSpec.builder("registerGeneratedAdapters")
                     .receiver(ClassName("io.github.fruit", "Fruit"))
                     .addCode(CodeBlock.builder().apply {
-                        processedClasses.forEach { clazz ->
+                        classesToRegister.forEach { clazz ->
                             val packageName = clazz.packageName.asString()
-                            val className = clazz.simpleName.asString()
-                            val adapterClassName = ClassName(packageName, "${className}PickAdapter")
+                            val fullName = getFullSimpleName(clazz)
+                            val adapterClassName = ClassName(packageName, "${fullName}PickAdapter")
                             addStatement("registerAdapter(%T::class, %T())", clazz.toClassName(), adapterClassName)
                         }
                     }.build())
@@ -141,7 +174,7 @@ class FruitProcessor(
             )
             .build()
 
-        fileSpec.writeTo(codeGenerator, Dependencies(false, *processedClasses.mapNotNull { it.containingFile }.toTypedArray()))
+        fileSpec.writeTo(codeGenerator, Dependencies(false, *classesToRegister.mapNotNull { it.containingFile }.toTypedArray()))
     }
 }
 

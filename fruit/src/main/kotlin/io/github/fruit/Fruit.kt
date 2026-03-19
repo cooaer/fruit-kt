@@ -17,14 +17,29 @@ class Fruit(
         adapterCache[clazz] = adapter
     }
 
+    // Java 兼容性重载
+    fun <T : Any> registerAdapter(clazz: Class<T>, adapter: PickAdapter<T>) {
+        registerAdapter(clazz.kotlin, adapter)
+    }
+
     fun <T : Any> fromHtml(html: String, clazz: KClass<T>): T? {
         if (html.isEmpty()) return null
         return fromHtml(Ksoup.parse(html), clazz)
     }
 
+    // Java 兼容性重载
+    fun <T : Any> fromHtml(html: String, clazz: Class<T>): T? {
+        return fromHtml(html, clazz.kotlin)
+    }
+
     fun <T : Any> fromHtml(element: Element, clazz: KClass<T>): T? {
         val adapter = getAdapter(clazz)
         return adapter.read(element, null)
+    }
+
+    // Java 兼容性重载
+    fun <T : Any> fromHtml(element: Element, clazz: Class<T>): T? {
+        return fromHtml(element, clazz.kotlin)
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -33,7 +48,7 @@ class Fruit(
         if (cached != null) return cached as PickAdapter<T>
 
         for (factory in factories) {
-            val adapter = factory.create(this, clazz)
+            val adapter = factory.create<T>(this, clazz)
             if (adapter != null) {
                 adapterCache[clazz] = adapter
                 return adapter
@@ -54,6 +69,6 @@ interface PickAdapter<T> {
     fun read(element: Element, pick: Pick? = null): T?
 }
 
-interface PickAdapterFactory {
-    fun <T : Any> create(fruit: Fruit, clazz: KClass<T>): PickAdapter<T>?
+fun interface PickAdapterFactory {
+    fun <T> create(fruit: Fruit, type: Any): PickAdapter<T>?
 }
