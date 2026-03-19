@@ -12,7 +12,8 @@ android {
 }
 
 dependencies {
-    implementation(project(":")) // 依赖核心 fruit-kt
+    implementation(project(":fruit"))
+ // 依赖核心 fruit-kt
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("org.jsoup:jsoup:1.15.4") // Retrofit 端可以保留对 Jsoup 的优化
 }
