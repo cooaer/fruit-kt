@@ -1,7 +1,7 @@
 plugins {
-    id("com.android.library") version "8.2.2"
-    kotlin("android") version "1.9.22"
-    id("com.google.devtools.ksp") version "1.9.22-1.0.17"
+    id("com.android.library")
+    kotlin("android")
+    id("com.google.devtools.ksp")
 }
 
 android {
@@ -20,16 +20,11 @@ android {
 }
 
 dependencies {
-    implementation("com.fleeksoft.ksoup:ksoup:0.1.0")
+    implementation("com.fleeksoft.ksoup:ksoup:0.2.6")
     
     // KSP 处理器依赖
     ksp(project(":fruit-ksp"))
     
     // 测试依赖
     testImplementation(kotlin("test"))
-}
-
-repositories {
-    google()
-    mavenCentral()
 }
