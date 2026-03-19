@@ -1,37 +1,7 @@
 plugins {
-    kotlin("multiplatform")
-    id("com.android.library")
-    id("com.google.devtools.ksp")
-}
-
-kotlin {
-    androidTarget()
-    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
-
-    sourceSets {
-        val commonMain by getting {
-            dependencies {
-                implementation("com.fleeksoft.ksoup:ksoup:0.1.0")
-                implementation("io.ktor:ktor-client-core:2.3.7")
-                implementation("io.ktor:ktor-client-content-negotiation:2.3.7")
-            }
-        }
-        val commonTest by getting {
-            dependencies {
-                implementation(kotlin("test"))
-            }
-        }
-    }
-}
-
-dependencies {
-    add("kspCommonMainMetadata", project(":fruit-ksp"))
-    add("kspAndroid", project(":fruit-ksp"))
-    add("kspIosX64", project(":fruit-ksp"))
-    add("kspIosArm64", project(":fruit-ksp"))
-    add("kspIosSimulatorArm64", project(":fruit-ksp"))
+    id("com.android.library") version "8.2.2"
+    kotlin("android") version "1.9.22"
+    id("com.google.devtools.ksp") version "1.9.22-1.0.17"
 }
 
 android {
@@ -44,4 +14,22 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
+
+dependencies {
+    implementation("com.fleeksoft.ksoup:ksoup:0.1.0")
+    
+    // KSP 处理器依赖
+    ksp(project(":fruit-ksp"))
+    
+    // 测试依赖
+    testImplementation(kotlin("test"))
+}
+
+repositories {
+    google()
+    mavenCentral()
 }
