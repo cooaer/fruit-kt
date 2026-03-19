@@ -3,6 +3,7 @@ package io.github.fruit
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.nodes.Element
 import io.github.fruit.annotations.Pick
+import io.github.fruit.annotations.Attrs
 import kotlin.reflect.KClass
 
 /**
@@ -17,7 +18,6 @@ class Fruit(
         adapterCache[clazz] = adapter
     }
 
-    // Java 兼容性重载
     fun <T : Any> registerAdapter(clazz: Class<T>, adapter: PickAdapter<T>) {
         registerAdapter(clazz.kotlin, adapter)
     }
@@ -27,17 +27,15 @@ class Fruit(
         return fromHtml(Ksoup.parse(html), clazz)
     }
 
-    // Java 兼容性重载
     fun <T : Any> fromHtml(html: String, clazz: Class<T>): T? {
         return fromHtml(html, clazz.kotlin)
     }
 
     fun <T : Any> fromHtml(element: Element, clazz: KClass<T>): T? {
         val adapter = getAdapter(clazz)
-        return adapter.read(element, null)
+        return adapter.read(element)
     }
 
-    // Java 兼容性重载
     fun <T : Any> fromHtml(element: Element, clazz: Class<T>): T? {
         return fromHtml(element, clazz.kotlin)
     }
@@ -66,9 +64,9 @@ class Fruit(
 }
 
 interface PickAdapter<T> {
-    fun read(element: Element, pick: Pick? = null): T?
+    fun read(element: Element, css: String = "", attr: String = Attrs.TEXT, ownText: Boolean = false): T?
 }
 
-fun interface PickAdapterFactory {
+interface PickAdapterFactory {
     fun <T> create(fruit: Fruit, type: Any): PickAdapter<T>?
 }

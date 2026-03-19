@@ -52,6 +52,7 @@ class FruitProcessor(
 
         val fileSpec = FileSpec.builder(packageName, adapterName)
             .addImport("io.github.fruit.annotations", "Pick")
+            .addImport("io.github.fruit.annotations", "Attrs")
             .addType(
                 TypeSpec.classBuilder(adapterName)
                     .addSuperinterface(
@@ -62,7 +63,9 @@ class FruitProcessor(
                         FunSpec.builder("read")
                             .addModifiers(KModifier.OVERRIDE)
                             .addParameter("element", ClassName("com.fleeksoft.ksoup.nodes", "Element"))
-                            .addParameter("pick", ClassName("io.github.fruit.annotations", "Pick").copy(nullable = true))
+                            .addParameter("css", String::class.asTypeName())
+                            .addParameter("attr", String::class.asTypeName())
+                            .addParameter("ownText", Boolean::class.asTypeName())
                             .returns(classDeclaration.toClassName().copy(nullable = true))
                             .addCode(generateReadLogic(classDeclaration))
                             .build()
@@ -87,6 +90,7 @@ class FruitProcessor(
     private fun generateReadLogic(classDeclaration: KSClassDeclaration): CodeBlock {
         val builder = CodeBlock.builder()
         val className = classDeclaration.toClassName()
+        val isKotlin = classDeclaration.origin == Origin.KOTLIN
         
         builder.addStatement("var currentElement = element")
         
@@ -100,44 +104,70 @@ class FruitProcessor(
             }
         }
 
-        builder.add("return %T(\n", className)
-        builder.indent()
-        
-        classDeclaration.getAllProperties().forEach { prop ->
-            val pickAnnotation = prop.annotations.find { 
-                it.annotationType.resolve().declaration.qualifiedName?.asString() == "io.github.fruit.annotations.Pick" 
+        if (isKotlin) {
+            // Kotlin 类使用具名参数构造函数
+            builder.add("return %T(\n", className)
+            builder.indent()
+            classDeclaration.getAllProperties().forEach { prop ->
+                val pickAnnotation = prop.annotations.find { 
+                    it.annotationType.resolve().declaration.qualifiedName?.asString() == "io.github.fruit.annotations.Pick" 
+                }
+                if (pickAnnotation != null) {
+                    val args = pickAnnotation.arguments
+                    val cssValue = args.find { it.name?.asString() == "value" }?.value as? String ?: ""
+                    val attr = args.find { it.name?.asString() == "attr" }?.value as? String ?: "text"
+                    val ownText = args.find { it.name?.asString() == "ownText" }?.value as? Boolean ?: false
+                    
+                    val type = prop.type.resolve()
+                    val propertyName = prop.simpleName.asString()
+                    
+                    builder.add("%N = ", propertyName)
+                    generateReadForType(builder, type, cssValue, attr, ownText)
+                    builder.add(",\n")
+                }
             }
-            if (pickAnnotation != null) {
-                val args = pickAnnotation.arguments
-                val cssValue = args.find { it.name?.asString() == "value" }?.value as? String ?: ""
-                val attr = args.find { it.name?.asString() == "attr" }?.value as? String ?: "text"
-                val ownText = args.find { it.name?.asString() == "ownText" }?.value as? Boolean ?: false
-                
-                val type = prop.type.resolve()
-                val propertyName = prop.simpleName.asString()
-                
-                builder.add("%N = ", propertyName)
-                generateReadForType(builder, type, cssValue, attr, ownText)
-                builder.add(",\n")
+            builder.unindent()
+            builder.addStatement(")")
+        } else {
+            // Java 类：使用无参构造函数并尝试通过反射或公开字段赋值（由于是无反射路径，这里需要权衡）
+            // 针对 V2compose，我们支持通过 Field 赋值，但在 KSP 阶段如果字段是私有的，我们需要反射或者 Setter。
+            // 为了“彻底”路径，建议用户将 Bean 转为 Kotlin。但在现有 Java 项目中，我们生成 Setter 调用逻辑。
+            builder.addStatement("val instance = %T()", className)
+            classDeclaration.getAllProperties().forEach { prop ->
+                val pickAnnotation = prop.annotations.find { 
+                    it.annotationType.resolve().declaration.qualifiedName?.asString() == "io.github.fruit.annotations.Pick" 
+                }
+                if (pickAnnotation != null) {
+                    val args = pickAnnotation.arguments
+                    val cssValue = args.find { it.name?.asString() == "value" }?.value as? String ?: ""
+                    val attr = args.find { it.name?.asString() == "attr" }?.value as? String ?: "text"
+                    val ownText = args.find { it.name?.asString() == "ownText" }?.value as? Boolean ?: false
+                    
+                    val type = prop.type.resolve()
+                    val propertyName = prop.simpleName.asString()
+                    
+                    // 这里假设 Java Bean 有公共字段或符合标准的 Kotlin 属性映射
+                    builder.add("instance.%N = ", propertyName)
+                    generateReadForType(builder, type, cssValue, attr, ownText)
+                    builder.add("\n")
+                }
             }
+            builder.addStatement("return instance")
         }
         
-        builder.unindent()
-        builder.addStatement(")")
         return builder.build()
     }
 
     private fun generateReadForType(builder: CodeBlock.Builder, type: KSType, css: String, attr: String, ownText: Boolean) {
         val qualifiedName = type.declaration.qualifiedName?.asString() ?: ""
-        val pickExpr = "Pick(value = %S, attr = %S, ownText = %L)"
 
         when {
-            qualifiedName == "kotlin.String" -> builder.add("io.github.fruit.bind.BasicPickAdapters.STRING_ADAPTER.read(currentElement, $pickExpr) ?: \"\"", css, attr, ownText)
-            qualifiedName == "kotlin.Int" -> builder.add("io.github.fruit.bind.BasicPickAdapters.INT_ADAPTER.read(currentElement, $pickExpr) ?: 0", css, attr, ownText)
-            qualifiedName == "kotlin.Long" -> builder.add("io.github.fruit.bind.BasicPickAdapters.LONG_ADAPTER.read(currentElement, $pickExpr) ?: 0L", css, attr, ownText)
-            qualifiedName == "kotlin.Float" -> builder.add("io.github.fruit.bind.BasicPickAdapters.FLOAT_ADAPTER.read(currentElement, $pickExpr) ?: 0.0f", css, attr, ownText)
-            qualifiedName == "kotlin.Boolean" -> builder.add("io.github.fruit.bind.BasicPickAdapters.BOOLEAN_ADAPTER.read(currentElement, $pickExpr) ?: false", css, attr, ownText)
-            qualifiedName == "kotlin.collections.List" || qualifiedName == "kotlin.collections.MutableList" -> {
+            qualifiedName == "kotlin.String" -> builder.add("io.github.fruit.bind.BasicPickAdapters.STRING_ADAPTER.read(currentElement, %S, %S, %L) ?: \"\"", css, attr, ownText)
+            qualifiedName == "kotlin.Int" -> builder.add("io.github.fruit.bind.BasicPickAdapters.INT_ADAPTER.read(currentElement, %S, %S, %L) ?: 0", css, attr, ownText)
+            qualifiedName == "kotlin.Long" -> builder.add("io.github.fruit.bind.BasicPickAdapters.LONG_ADAPTER.read(currentElement, %S, %S, %L) ?: 0L", css, attr, ownText)
+            qualifiedName == "kotlin.Float" -> builder.add("io.github.fruit.bind.BasicPickAdapters.FLOAT_ADAPTER.read(currentElement, %S, %S, %L) ?: 0.0f", css, attr, ownText)
+            qualifiedName == "kotlin.Boolean" -> builder.add("io.github.fruit.bind.BasicPickAdapters.BOOLEAN_ADAPTER.read(currentElement, %S, %S, %L) ?: false", css, attr, ownText)
+            qualifiedName == "kotlin.collections.List" || qualifiedName == "kotlin.collections.MutableList" || qualifiedName == "java.util.List" -> {
                 val elementType = type.arguments.firstOrNull()?.type?.resolve()
                 if (elementType != null) {
                     builder.add("currentElement.select(%S).map { ", css)
@@ -151,7 +181,8 @@ class FruitProcessor(
                 val nestedClass = type.declaration as? KSClassDeclaration
                 val nestedFullName = if (nestedClass != null) getFullSimpleName(nestedClass) else type.declaration.simpleName.asString()
                 val adapterName = "${nestedFullName}PickAdapter"
-                builder.add("%T().read(currentElement.selectFirst(%S) ?: currentElement, null)!!", 
+                // 递归调用
+                builder.add("%T().read(currentElement.selectFirst(%S) ?: currentElement, \"\", \"text\", false)!!", 
                     ClassName(type.declaration.packageName.asString(), adapterName), css)
             }
         }
