@@ -120,20 +120,39 @@ class FruitProcessor(
         val builder = CodeBlock.builder()
         val className = classDeclaration.toClassName()
 
-        builder.addStatement("var currentElement = element")
-
         val classPulp = classDeclaration.annotations.find {
             it.annotationType.resolve().declaration.qualifiedName?.asString() == "io.github.fruit.annotations.Pulp"
         }
-        if (classPulp != null) {
-            val cssValue =
-                classPulp.arguments.find { it.name?.asString() == "value" }?.value as? String ?: ""
-            if (cssValue.isNotEmpty()) {
-                builder.addStatement(
-                    "currentElement = element.selectFirst(%S) ?: return null",
-                    cssValue
-                )
+        val cssValue = if (classPulp != null) {
+            classPulp.arguments.find { it.name?.asString() == "value" }?.value as? String ?: ""
+        } else ""
+
+        val elementType = getCollectionElementType(classDeclaration)
+
+        if (elementType != null && cssValue.isNotEmpty()) {
+            builder.addStatement("val instance = %T()", className)
+            if (classDeclaration.superTypes.any {
+                    val qn = it.resolve().declaration.qualifiedName?.asString()
+                    qn == "io.github.fruit.converter.retrofit.IBaseWrapper" || qn == "io.github.v2compose.network.bean.IBase"
+                }) {
+                builder.addStatement("instance.setResponse(element.outerHtml())")
             }
+
+            builder.beginControlFlow("element.select(%S).forEach", cssValue)
+            generateReadForType(builder, elementType, "", "text", false, "it")
+            builder.add(".let { instance.add(it) }\n")
+            builder.endControlFlow()
+            builder.addStatement("return instance")
+            return builder.build()
+        }
+
+        builder.addStatement("var currentElement = element")
+
+        if (cssValue.isNotEmpty()) {
+            builder.addStatement(
+                "currentElement = element.selectFirst(%S) ?: return null",
+                cssValue
+            )
         }
 
         // 统一使用无参构造函数实例化，然后反射设值
@@ -141,7 +160,10 @@ class FruitProcessor(
         builder.addStatement("val instance = %T()", className)
 
         // 自动注入 responseHtml (如果实现了 IBaseWrapper)
-        if (classDeclaration.superTypes.any { it.resolve().declaration.qualifiedName?.asString() == "io.github.fruit.converter.retrofit.IBaseWrapper" }) {
+        if (classDeclaration.superTypes.any {
+                val qn = it.resolve().declaration.qualifiedName?.asString()
+                qn == "io.github.fruit.converter.retrofit.IBaseWrapper" || qn == "io.github.v2compose.network.bean.IBase"
+            }) {
             builder.addStatement("instance.setResponse(currentElement.outerHtml())")
         }
 
@@ -251,6 +273,26 @@ class FruitProcessor(
                 }
             }
         }
+    }
+
+    private fun getCollectionElementType(classDeclaration: KSClassDeclaration): KSType? {
+        val collectionNames = setOf(
+            "kotlin.collections.List", "kotlin.collections.MutableList", "java.util.List",
+            "kotlin.collections.Collection", "java.util.Collection",
+            "kotlin.collections.ArrayList", "java.util.ArrayList"
+        )
+        classDeclaration.superTypes.forEach { ref ->
+            val type = ref.resolve()
+            if (collectionNames.contains(type.declaration.qualifiedName?.asString())) {
+                return type.arguments.firstOrNull()?.type?.resolve()
+            }
+            val decl = type.declaration
+            if (decl is KSClassDeclaration) {
+                val found = getCollectionElementType(decl)
+                if (found != null) return found
+            }
+        }
+        return null
     }
 
     private fun generateRegistry() {
