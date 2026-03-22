@@ -12,14 +12,10 @@ import kotlin.reflect.KClass
 class Fruit(
     private val factories: List<PickAdapterFactory> = emptyList()
 ) {
-    private val adapterCache = mutableMapOf<Any, PickAdapter<*>>()
+    private val adapterCache = mutableMapOf<KClass<*>, PickAdapter<*>>()
 
     fun <T : Any> registerAdapter(clazz: KClass<T>, adapter: PickAdapter<T>) {
         adapterCache[clazz] = adapter
-    }
-
-    fun <T : Any> registerAdapter(clazz: Class<T>, adapter: PickAdapter<T>) {
-        registerAdapter(clazz.kotlin, adapter)
     }
 
     fun <T : Any> fromHtml(html: String, clazz: KClass<T>): T? {
@@ -27,17 +23,9 @@ class Fruit(
         return fromHtml(Ksoup.parse(html), clazz)
     }
 
-    fun <T : Any> fromHtml(html: String, clazz: Class<T>): T? {
-        return fromHtml(html, clazz.kotlin)
-    }
-
     fun <T : Any> fromHtml(element: Element, clazz: KClass<T>): T? {
         val adapter = getAdapter(clazz)
         return adapter.read(element)
-    }
-
-    fun <T : Any> fromHtml(element: Element, clazz: Class<T>): T? {
-        return fromHtml(element, clazz.kotlin)
     }
 
     @Suppress("UNCHECKED_CAST")

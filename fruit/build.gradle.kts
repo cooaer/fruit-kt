@@ -1,10 +1,52 @@
 plugins {
+    kotlin("multiplatform")
     id("com.android.library")
+    kotlin("plugin.serialization")
     id("com.google.devtools.ksp")
 }
 
 group = "io.github.fruit"
 version = "1.0.0"
+
+kotlin {
+    androidTarget {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
+        }
+    }
+    
+    listOf(
+        iosArm64(),
+        iosSimulatorArm64()
+    ).forEach {
+        it.binaries.framework {
+            baseName = "fruit"
+            isStatic = true
+        }
+    }
+
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                implementation("com.fleeksoft.ksoup:ksoup:0.2.6")
+                implementation("io.ktor:ktor-client-core:3.1.1")
+                implementation("io.ktor:ktor-client-content-negotiation:3.1.1")
+            }
+        }
+        
+        val commonTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
+        
+        val androidMain by getting
+        
+        val iosMain by creating {
+            dependsOn(commonMain)
+        }
+    }
+}
 
 android {
     namespace = "io.github.fruit"
@@ -12,20 +54,9 @@ android {
     defaultConfig {
         minSdk = 21
     }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
 }
 
 dependencies {
-    implementation("com.fleeksoft.ksoup:ksoup:0.2.6")
-    implementation("io.ktor:ktor-client-core:2.3.7")
-    implementation("io.ktor:ktor-client-content-negotiation:2.3.7")
-    
     // KSP 处理器依赖
-    ksp(project(":fruit-ksp"))
-    
-    // 测试依赖
-    testImplementation(kotlin("test"))
+    add("kspAndroid", project(":fruit-ksp"))
 }

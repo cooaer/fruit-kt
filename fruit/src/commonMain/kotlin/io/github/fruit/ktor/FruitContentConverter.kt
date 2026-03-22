@@ -10,7 +10,6 @@ import io.ktor.utils.io.*
 import io.ktor.utils.io.charsets.*
 import io.github.fruit.Fruit
 import io.ktor.utils.io.core.*
-import kotlin.reflect.KClass
 
 class FruitContentConverter(private val fruit: Fruit) : ContentConverter {
 
@@ -19,9 +18,7 @@ class FruitContentConverter(private val fruit: Fruit) : ContentConverter {
         typeInfo: TypeInfo,
         content: ByteReadChannel
     ): Any? {
-        val packet = content.readRemaining()
-        val html = packet.readText(charset = charset)
-        
+        val html = content.readRemaining().readText(charset = charset)
         val clazz = typeInfo.type
         return fruit.fromHtml(html, clazz)
     }
@@ -30,7 +27,7 @@ class FruitContentConverter(private val fruit: Fruit) : ContentConverter {
         contentType: ContentType,
         charset: Charset,
         typeInfo: TypeInfo,
-        value: Any
+        value: Any?
     ): OutgoingContent? {
         // HTML serialization is not supported
         return null
@@ -40,7 +37,7 @@ class FruitContentConverter(private val fruit: Fruit) : ContentConverter {
 /**
  * Register Fruit converter in Ktor ContentNegotiation
  */
-fun ContentNegotiation.Config.fruit(fruit: Fruit) {
+fun ContentNegotiationConfig.fruit(fruit: Fruit) {
     val converter = FruitContentConverter(fruit)
     register(ContentType.Text.Html, converter)
 }
