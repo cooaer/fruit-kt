@@ -2,6 +2,10 @@
 
 `fruit-kt` 是一个 Kotlin Multiplatform (KMP) HTML 到对象的绑定库。它是原 Java 版 `Fruit` 库的现代化、无反射移植版本，旨在无缝运行于 Android、iOS（通过 Compose Multiplatform）以及其他 Kotlin 支持的平台。
 
+## 交互协议
+- **语言**: 除非特别要求，否则使用中文回复。
+- **代码提交**: 每当完成重要的代码修改或功能实现后，请主动执行 `git commit` 保存进度。
+
 ## 核心使命
 通过 CSS 选择器提供一种声明式的方法将 HTML 解析为 Kotlin 数据类，同时确保与不支持 JVM 反射的平台（如 iOS/Kotlin Native）的兼容性。
 
