@@ -2,7 +2,6 @@ package io.github.fruit
 
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.nodes.Element
-import io.github.fruit.annotations.Pick
 import io.github.fruit.annotations.Attrs
 import kotlin.reflect.KClass
 

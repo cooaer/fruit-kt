@@ -80,25 +80,7 @@ class FruitProcessor(
                             .addCode(generateReadLogic(classDeclaration))
                             .build()
                     )
-                    .addFunction(
-                        FunSpec.builder("setField")
-                            .addModifiers(KModifier.PRIVATE)
-                            .addParameter("target", Any::class.asTypeName())
-                            .addParameter("name", String::class.asTypeName())
-                            .addParameter("value", Any::class.asTypeName().copy(nullable = true))
-                            .addCode(
-                                """
-                                try {
-                                    val field = target.javaClass.getDeclaredField(name)
-                                    field.isAccessible = true
-                                    field.set(target, value)
-                                } catch (e: Exception) {
-                                    // ignore
-                                }
-                            """.trimIndent()
-                            )
-                            .build()
-                    )
+
                     .build()
             )
             .build()
@@ -182,9 +164,9 @@ class FruitProcessor(
                 val type = prop.type.resolve()
                 val propertyName = prop.simpleName.asString()
 
-                builder.add("setField(instance, %S, ", propertyName)
+                builder.add("instance.%L = ", propertyName)
                 generateReadForType(builder, type, cssValue, attr, ownText, "currentElement")
-                builder.add(")\n")
+                builder.add("\n")
             }
         }
 
