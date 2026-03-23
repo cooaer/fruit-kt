@@ -1,5 +1,6 @@
 package io.github.fruit.ksp
 
+import com.google.devtools.ksp.getAllSuperTypes
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.Dependencies
 import com.google.devtools.ksp.processing.KSPLogger
@@ -113,10 +114,9 @@ class FruitProcessor(
 
         if (elementType != null && cssValue.isNotEmpty()) {
             builder.addStatement("val instance = %T()", className)
-            if (classDeclaration.superTypes.any {
-                    val qn = it.resolve().declaration.qualifiedName?.asString()
-                    qn == "io.github.fruit.converter.retrofit.IBaseWrapper" || qn == "io.github.v2compose.network.bean.IBase"
-                }) {
+            
+            // 检查整个继承链
+            if (implementsBaseInterface(classDeclaration)) {
                 builder.addStatement("instance.setResponse(element.outerHtml())")
             }
 
@@ -137,15 +137,10 @@ class FruitProcessor(
             )
         }
 
-        // 统一使用无参构造函数实例化，然后反射设值
-        // 这样可以规避 Kotlin val 无法赋值、具名参数禁止以及 Java 私有字段等所有问题
         builder.addStatement("val instance = %T()", className)
 
-        // 自动注入 responseHtml (如果实现了 IBaseWrapper)
-        if (classDeclaration.superTypes.any {
-                val qn = it.resolve().declaration.qualifiedName?.asString()
-                qn == "io.github.fruit.converter.retrofit.IBaseWrapper" || qn == "io.github.v2compose.network.bean.IBase"
-            }) {
+        // 检查整个继承链
+        if (implementsBaseInterface(classDeclaration)) {
             builder.addStatement("instance.setResponse(currentElement.outerHtml())")
         }
 
@@ -254,6 +249,20 @@ class FruitProcessor(
                     )
                 }
             }
+        }
+    }
+
+    /**
+     * 递归检查一个类及其所有父类/接口是否实现了指定的 Base 接口
+     */
+    private fun implementsBaseInterface(classDeclaration: KSClassDeclaration): Boolean {
+        val targetNames = setOf(
+            "io.github.fruit.converter.retrofit.IBaseWrapper",
+            "io.github.v2compose.network.bean.IBase"
+        )
+        // 使用 KSP 提供的 getAllSuperTypes() 递归获取所有父类型
+        return classDeclaration.getAllSuperTypes().any {
+            it.declaration.qualifiedName?.asString() in targetNames
         }
     }
 
