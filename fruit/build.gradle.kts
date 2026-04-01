@@ -1,6 +1,6 @@
 plugins {
     kotlin("multiplatform")
-    id("com.android.library")
+    id("com.android.kotlin.multiplatform.library")
     kotlin("plugin.serialization")
     id("com.google.devtools.ksp")
 }
@@ -9,12 +9,11 @@ group = "io.github.fruit"
 version = "1.0.0"
 
 kotlin {
-    androidTarget {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
-        }
+    android {
+        namespace = "io.github.fruit"
+        compileSdk { version = release(36) }
     }
-    
+
     listOf(
         iosArm64(),
         iosSimulatorArm64()
@@ -33,26 +32,18 @@ kotlin {
                 implementation("io.ktor:ktor-client-content-negotiation:3.1.1")
             }
         }
-        
+
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
             }
         }
-        
+
         val androidMain by getting
-        
+
         val iosMain by creating {
             dependsOn(commonMain)
         }
-    }
-}
-
-android {
-    namespace = "io.github.fruit"
-    compileSdk = 34
-    defaultConfig {
-        minSdk = 21
     }
 }
 
