@@ -16,6 +16,9 @@ local.properties
 *.aar
 
 # IntelliJ IDEA
+.idea/gradle.xml
+.idea/kotlinc.xml
+.idea/artifacts/
 .idea/modules.xml
 .idea/workspace.xml
 .idea/tasks.xml
