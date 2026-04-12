@@ -1,6 +1,5 @@
 plugins {
     id("com.android.library")
-    kotlin("android")
     id("com.google.devtools.ksp")
 }
 
@@ -33,4 +32,10 @@ dependencies {
 
     testImplementation(kotlin("test"))
     testImplementation("junit:junit:4.13.2")
+}
+
+tasks.matching { task ->
+    task.name.startsWith("ksp") && task.name.contains("UnitTest")
+}.configureEach {
+    enabled = false
 }
