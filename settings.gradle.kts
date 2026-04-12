@@ -17,4 +17,6 @@ rootProject.name = "fruit-kt"
 
 include(":fruit")
 include(":fruit-ksp")
+include(":fruit-ktor")
 include(":fruit-converter-retrofit")
+include(":fruit-ksp-sample")

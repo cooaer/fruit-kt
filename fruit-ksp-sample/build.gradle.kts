@@ -1,13 +1,14 @@
 plugins {
     id("com.android.library")
     kotlin("android")
+    id("com.google.devtools.ksp")
 }
 
 group = "io.github.fruit"
 version = "1.0.0"
 
 android {
-    namespace = "io.github.fruit.converter.retrofit"
+    namespace = "io.github.fruit.sample.ksp"
     compileSdk = 36
 
     defaultConfig {
@@ -27,9 +28,9 @@ kotlin {
 }
 
 dependencies {
-    api(project(":fruit"))
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    testImplementation("com.fleeksoft.ksoup:ksoup:0.2.6")
+    implementation(project(":fruit"))
+    add("ksp", project(":fruit-ksp"))
+
     testImplementation(kotlin("test"))
     testImplementation("junit:junit:4.13.2")
 }
