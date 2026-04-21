@@ -57,3 +57,7 @@ interface PickAdapter<T> {
 interface PickAdapterFactory {
     fun <T> create(fruit: Fruit, type: Any): PickAdapter<T>?
 }
+
+interface RawResponseHolder {
+    val rawResponse: String
+}
