@@ -2,7 +2,7 @@ package io.github.fruit.converter.retrofit
 
 import com.fleeksoft.ksoup.nodes.Element
 import io.github.fruit.Fruit
-import io.github.fruit.PickAdapter
+import io.github.fruit.SliceAdapter
 import okhttp3.MediaType
 import okhttp3.ResponseBody
 import org.junit.Assert.assertEquals
@@ -15,7 +15,7 @@ class FruitConverterFactoryTest {
     @Test
     fun convertHtmlResponseBody() {
         val fruit = Fruit().apply {
-            registerAdapter(RetrofitNews::class, RetrofitNewsAdapter)
+            registerSliceAdapter(RetrofitNews::class, RetrofitNewsAdapter)
         }
 
         val factory = FruitConverterFactory.create(fruit)
@@ -48,7 +48,7 @@ private data class RetrofitNews(
     val link: String
 )
 
-private object RetrofitNewsAdapter : PickAdapter<RetrofitNews> {
+private object RetrofitNewsAdapter : SliceAdapter<RetrofitNews> {
     override fun read(
         element: Element,
         css: String,

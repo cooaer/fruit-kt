@@ -3,7 +3,7 @@ package io.github.fruit
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.nodes.Element
 import io.github.fruit.annotations.Attrs
-import io.github.fruit.bind.BasicPickAdapters
+import io.github.fruit.bind.BasicSliceAdapters
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -34,8 +34,8 @@ class FruitCoreTest {
         """.trimIndent()
 
         val fruit = Fruit().apply {
-            registerAdapter(Author::class, AuthorAdapter)
-            registerAdapter(Article::class, ArticleAdapter(this))
+            registerSliceAdapter(Author::class, AuthorAdapter)
+            registerSliceAdapter(Article::class, ArticleAdapter(this))
         }
 
         val article = fruit.fromHtml(html, Article::class)
@@ -50,7 +50,7 @@ class FruitCoreTest {
     }
 
     @Test
-    fun basicPickAdaptersReadPrimitiveValues() {
+    fun basicSliceAdaptersReadPrimitiveValues() {
         val html = """
             <div>
                 <span class="count">42</span>
@@ -61,13 +61,13 @@ class FruitCoreTest {
         """.trimIndent()
         val document = Ksoup.parse(html)
 
-        assertEquals("42", BasicPickAdapters.STRING_ADAPTER.read(document, ".count"))
-        assertEquals(42, BasicPickAdapters.INT_ADAPTER.read(document, ".count"))
-        assertEquals(9.5f, BasicPickAdapters.FLOAT_ADAPTER.read(document, ".price"))
-        assertEquals(true, BasicPickAdapters.BOOLEAN_ADAPTER.read(document, ".enabled"))
+        assertEquals("42", BasicSliceAdapters.STRING_ADAPTER.read(document, ".count"))
+        assertEquals(42, BasicSliceAdapters.INT_ADAPTER.read(document, ".count"))
+        assertEquals(9.5f, BasicSliceAdapters.FLOAT_ADAPTER.read(document, ".price"))
+        assertEquals(true, BasicSliceAdapters.BOOLEAN_ADAPTER.read(document, ".enabled"))
         assertEquals(
             "https://example.com/item",
-            BasicPickAdapters.STRING_ADAPTER.read(document, ".source", Attrs.HREF)
+            BasicSliceAdapters.STRING_ADAPTER.read(document, ".source", Attrs.HREF)
         )
     }
 
@@ -96,7 +96,7 @@ private data class Article(
 
 private class ArticleAdapter(
     private val fruit: Fruit
-) : PickAdapter<Article> {
+) : SliceAdapter<Article> {
     override fun read(
         element: Element,
         css: String,
@@ -104,23 +104,23 @@ private class ArticleAdapter(
         ownText: Boolean
     ): Article? {
         val root = resolveElement(element, css) ?: return null
-        val contentSummary = BasicPickAdapters.STRING_ADAPTER
+        val contentSummary = BasicSliceAdapters.STRING_ADAPTER
             .read(root, ".content", ownText = true)
             .orEmpty()
             .replace("\\s+".toRegex(), " ")
             .trim()
 
         return Article(
-            title = BasicPickAdapters.STRING_ADAPTER.read(root, ".title").orEmpty(),
+            title = BasicSliceAdapters.STRING_ADAPTER.read(root, ".title").orEmpty(),
             author = fruit.fromHtml(root.selectFirst(".meta") ?: return null, Author::class) ?: return null,
-            tags = root.select(".tags .tag").map { BasicPickAdapters.STRING_ADAPTER.read(it).orEmpty() },
-            sourceUrl = BasicPickAdapters.STRING_ADAPTER.read(root, ".source", Attrs.HREF).orEmpty(),
+            tags = root.select(".tags .tag").map { BasicSliceAdapters.STRING_ADAPTER.read(it).orEmpty() },
+            sourceUrl = BasicSliceAdapters.STRING_ADAPTER.read(root, ".source", Attrs.HREF).orEmpty(),
             contentSummary = contentSummary
         )
     }
 }
 
-private object AuthorAdapter : PickAdapter<Author> {
+private object AuthorAdapter : SliceAdapter<Author> {
     override fun read(
         element: Element,
         css: String,
@@ -129,8 +129,8 @@ private object AuthorAdapter : PickAdapter<Author> {
     ): Author? {
         val root = resolveElement(element, css) ?: return null
         return Author(
-            name = BasicPickAdapters.STRING_ADAPTER.read(root, ".author").orEmpty(),
-            date = BasicPickAdapters.STRING_ADAPTER.read(root, ".date").orEmpty()
+            name = BasicSliceAdapters.STRING_ADAPTER.read(root, ".author").orEmpty(),
+            date = BasicSliceAdapters.STRING_ADAPTER.read(root, ".date").orEmpty()
         )
     }
 }

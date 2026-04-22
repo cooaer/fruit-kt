@@ -2,7 +2,7 @@ package io.github.fruit.ktor
 
 import com.fleeksoft.ksoup.nodes.Element
 import io.github.fruit.Fruit
-import io.github.fruit.PickAdapter
+import io.github.fruit.SliceAdapter
 import io.ktor.util.reflect.typeInfo
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charsets
@@ -16,7 +16,7 @@ class FruitContentConverterTest {
     @Test
     fun deserializeHtmlIntoRegisteredType() = runTest {
         val fruit = Fruit().apply {
-            registerAdapter(KtorNews::class, KtorNewsAdapter)
+            registerSliceAdapter(KtorNews::class, KtorNewsAdapter)
         }
 
         val converter = FruitContentConverter(fruit)
@@ -44,7 +44,7 @@ private data class KtorNews(
     val link: String
 )
 
-private object KtorNewsAdapter : PickAdapter<KtorNews> {
+private object KtorNewsAdapter : SliceAdapter<KtorNews> {
     override fun read(
         element: Element,
         css: String,

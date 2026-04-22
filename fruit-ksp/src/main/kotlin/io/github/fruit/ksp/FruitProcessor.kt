@@ -36,7 +36,7 @@ class FruitProcessor(
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
         val classesInThisRound =
-            resolver.getSymbolsWithAnnotation("io.github.fruit.annotations.Pulp")
+            resolver.getSymbolsWithAnnotation("io.github.fruit.annotations.Slice")
                 .filterIsInstance<KSClassDeclaration>().toSet()
 
         classesInThisRound.forEach { clazz ->
@@ -65,7 +65,7 @@ class FruitProcessor(
 
         val packageName = classDeclaration.packageName.asString()
         val fullName = getFullSimpleName(classDeclaration)
-        val adapterName = "${fullName}PickAdapter"
+        val adapterName = "${fullName}SliceAdapter"
 
         val fileSpec = FileSpec.builder(packageName, adapterName)
             .addImport("io.github.fruit.annotations", "Attrs")
@@ -73,7 +73,7 @@ class FruitProcessor(
             .addType(
                 TypeSpec.classBuilder(adapterName)
                     .addSuperinterface(
-                        ClassName("io.github.fruit", "PickAdapter")
+                        ClassName("io.github.fruit", "SliceAdapter")
                             .parameterizedBy(classDeclaration.toClassName())
                     )
                     .addFunction(
@@ -100,11 +100,11 @@ class FruitProcessor(
 
     private fun validateClass(classDeclaration: KSClassDeclaration): String? {
         if (inheritsCollection(classDeclaration)) {
-            return "@Pulp type ${classDeclaration.simpleName.asString()} must use an explicit List property instead of inheriting from Collection/MutableList."
+            return "@Slice type ${classDeclaration.simpleName.asString()} must use an explicit List property instead of inheriting from Collection/MutableList."
         }
 
         val primaryConstructor = classDeclaration.primaryConstructor
-            ?: return "@Pulp type ${classDeclaration.simpleName.asString()} must declare a primary constructor."
+            ?: return "@Slice type ${classDeclaration.simpleName.asString()} must declare a primary constructor."
         val constructorParameters = primaryConstructor.parameters.associateBy { it.name?.asString() }
         val rawResponseSupported = implementsRawResponseHolder(classDeclaration)
 
@@ -155,8 +155,8 @@ class FruitProcessor(
     private fun generateReadLogic(classDeclaration: KSClassDeclaration): CodeBlock {
         val builder = CodeBlock.builder()
         val className = classDeclaration.toClassName()
-        val classPulp = classDeclaration.pulpAnnotation()
-        val cssValue = classPulp?.arguments
+        val classSlice = classDeclaration.sliceAnnotation()
+        val cssValue = classSlice?.arguments
             ?.find { it.name?.asString() == "value" }
             ?.value as? String ?: ""
         val rawResponseSupported = implementsRawResponseHolder(classDeclaration)
@@ -221,7 +221,7 @@ class FruitProcessor(
 
         when (qualifiedName) {
             "kotlin.String" -> builder.add(
-                "io.github.fruit.bind.BasicPickAdapters.STRING_ADAPTER.read(%L, %S, %S, %L) ?: \"\"",
+                "io.github.fruit.bind.BasicSliceAdapters.STRING_ADAPTER.read(%L, %S, %S, %L) ?: \"\"",
                 elementName,
                 css,
                 attr,
@@ -229,7 +229,7 @@ class FruitProcessor(
             )
 
             "kotlin.Int" -> builder.add(
-                "io.github.fruit.bind.BasicPickAdapters.INT_ADAPTER.read(%L, %S, %S, %L) ?: 0",
+                "io.github.fruit.bind.BasicSliceAdapters.INT_ADAPTER.read(%L, %S, %S, %L) ?: 0",
                 elementName,
                 css,
                 attr,
@@ -237,7 +237,7 @@ class FruitProcessor(
             )
 
             "kotlin.Long" -> builder.add(
-                "io.github.fruit.bind.BasicPickAdapters.LONG_ADAPTER.read(%L, %S, %S, %L) ?: 0L",
+                "io.github.fruit.bind.BasicSliceAdapters.LONG_ADAPTER.read(%L, %S, %S, %L) ?: 0L",
                 elementName,
                 css,
                 attr,
@@ -245,7 +245,7 @@ class FruitProcessor(
             )
 
             "kotlin.Float" -> builder.add(
-                "io.github.fruit.bind.BasicPickAdapters.FLOAT_ADAPTER.read(%L, %S, %S, %L) ?: 0.0f",
+                "io.github.fruit.bind.BasicSliceAdapters.FLOAT_ADAPTER.read(%L, %S, %S, %L) ?: 0.0f",
                 elementName,
                 css,
                 attr,
@@ -253,7 +253,7 @@ class FruitProcessor(
             )
 
             "kotlin.Boolean" -> builder.add(
-                "io.github.fruit.bind.BasicPickAdapters.BOOLEAN_ADAPTER.read(%L, %S, %S, %L) ?: false",
+                "io.github.fruit.bind.BasicSliceAdapters.BOOLEAN_ADAPTER.read(%L, %S, %S, %L) ?: false",
                 elementName,
                 css,
                 attr,
@@ -275,7 +275,7 @@ class FruitProcessor(
                 val nestedClass = type.declaration as? KSClassDeclaration
                 val nestedFullName =
                     if (nestedClass != null) getFullSimpleName(nestedClass) else type.declaration.simpleName.asString()
-                val adapterName = "${nestedFullName}PickAdapter"
+                val adapterName = "${nestedFullName}SliceAdapter"
                 if (css.isNotEmpty()) {
                     builder.add(
                         "%T().read(%L.selectFirst(%S) ?: %L, \"\", \"text\", false)",
@@ -309,35 +309,35 @@ class FruitProcessor(
         val qualifiedName = type.declaration.qualifiedName?.asString().orEmpty()
         when (qualifiedName) {
             "kotlin.String" -> builder.add(
-                "io.github.fruit.bind.BasicPickAdapters.STRING_ADAPTER.read(%L, \"\", %S, %L) ?: \"\"",
+                "io.github.fruit.bind.BasicSliceAdapters.STRING_ADAPTER.read(%L, \"\", %S, %L) ?: \"\"",
                 elementName,
                 attr,
                 ownText
             )
 
             "kotlin.Int" -> builder.add(
-                "io.github.fruit.bind.BasicPickAdapters.INT_ADAPTER.read(%L, \"\", %S, %L) ?: 0",
+                "io.github.fruit.bind.BasicSliceAdapters.INT_ADAPTER.read(%L, \"\", %S, %L) ?: 0",
                 elementName,
                 attr,
                 ownText
             )
 
             "kotlin.Long" -> builder.add(
-                "io.github.fruit.bind.BasicPickAdapters.LONG_ADAPTER.read(%L, \"\", %S, %L) ?: 0L",
+                "io.github.fruit.bind.BasicSliceAdapters.LONG_ADAPTER.read(%L, \"\", %S, %L) ?: 0L",
                 elementName,
                 attr,
                 ownText
             )
 
             "kotlin.Float" -> builder.add(
-                "io.github.fruit.bind.BasicPickAdapters.FLOAT_ADAPTER.read(%L, \"\", %S, %L) ?: 0.0f",
+                "io.github.fruit.bind.BasicSliceAdapters.FLOAT_ADAPTER.read(%L, \"\", %S, %L) ?: 0.0f",
                 elementName,
                 attr,
                 ownText
             )
 
             "kotlin.Boolean" -> builder.add(
-                "io.github.fruit.bind.BasicPickAdapters.BOOLEAN_ADAPTER.read(%L, \"\", %S, %L) ?: false",
+                "io.github.fruit.bind.BasicSliceAdapters.BOOLEAN_ADAPTER.read(%L, \"\", %S, %L) ?: false",
                 elementName,
                 attr,
                 ownText
@@ -347,7 +347,7 @@ class FruitProcessor(
                 val nestedClass = type.declaration as? KSClassDeclaration
                 val nestedFullName =
                     if (nestedClass != null) getFullSimpleName(nestedClass) else type.declaration.simpleName.asString()
-                val adapterName = "${nestedFullName}PickAdapter"
+                val adapterName = "${nestedFullName}SliceAdapter"
                 builder.add(
                     "%T().read(%L, \"\", \"text\", false)%L",
                     ClassName(type.declaration.packageName.asString(), adapterName),
@@ -389,16 +389,16 @@ class FruitProcessor(
     private fun generateRegistry() {
         val fileSpec = FileSpec.builder("io.github.fruit", "FruitRegistry")
             .addFunction(
-                FunSpec.builder("registerGeneratedAdapters")
+                FunSpec.builder("registerGeneratedSliceAdapters")
                     .receiver(ClassName("io.github.fruit", "Fruit"))
                     .addCode(
                         CodeBlock.builder().apply {
                             classesToRegister.forEach { clazz ->
                                 val packageName = clazz.packageName.asString()
                                 val fullName = getFullSimpleName(clazz)
-                                val adapterClassName = ClassName(packageName, "${fullName}PickAdapter")
+                                val adapterClassName = ClassName(packageName, "${fullName}SliceAdapter")
                                 addStatement(
-                                    "registerAdapter(%T::class, %T())",
+                                    "registerSliceAdapter(%T::class, %T())",
                                     clazz.toClassName(),
                                     adapterClassName
                                 )
@@ -415,8 +415,8 @@ class FruitProcessor(
         )
     }
 
-    private fun KSClassDeclaration.pulpAnnotation() = annotations.find {
-        it.annotationType.resolve().declaration.qualifiedName?.asString() == "io.github.fruit.annotations.Pulp"
+    private fun KSClassDeclaration.sliceAnnotation() = annotations.find {
+        it.annotationType.resolve().declaration.qualifiedName?.asString() == "io.github.fruit.annotations.Slice"
     }
 
     private fun KSPropertyDeclaration.pickAnnotation() = annotations.find {

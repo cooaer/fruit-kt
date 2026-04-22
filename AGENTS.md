@@ -14,7 +14,7 @@
 ### 1. KSP vs. 反射
 与原 Java 版本不同，`fruit-kt` **避免使用运行时反射**。
 - **策略**：使用 **Kotlin Symbol Processing (KSP)** 在编译期扫描 `@Pick` 注解。
-- **输出**：KSP 为每个标注的类生成高性能的 `PickAdapter` 实现。
+- **输出**：KSP 为每个标注的类生成高性能的 `SliceAdapter` 实现。
 - **iOS 兼容性**：这种方法对于 iOS 支持至关重要，因为 Kotlin/Native 不支持 `java.lang.reflect`。
 
 ### 2. HTML 解析引擎
@@ -23,7 +23,7 @@
 
 ### 3. 模块结构
 - **根目录 (`:`)**：包含通用多平台逻辑、注解 (`@Pick`) 和 `Fruit` 入口点。
-- **`:fruit-ksp`**：代码生成器。生成 `*PickAdapter` 类和全局 `registerGeneratedAdapters()` 扩展函数。
+- **`:fruit-ksp`**：代码生成器。生成 `*SliceAdapter` 类和全局 `registerGeneratedSliceAdapters()` 扩展函数。
 - **`:fruit-converter-retrofit`**：针对 Android 的 Retrofit 适配器。
 
 ## 核心 API 与用法
@@ -37,7 +37,7 @@
 ### 集成方式
 1. **初始化**：
    ```kotlin
-   val fruit = Fruit().apply { registerGeneratedAdapters() }
+   val fruit = Fruit().apply { registerGeneratedSliceAdapters() }
    ```
 2. **解析**：
    ```kotlin
@@ -46,7 +46,7 @@
 
 ## 代理开发指南
 
-- **添加类型**：在支持新字段类型时，请更新 `commonMain` 中的 `BasicPickAdapters` 和 `FruitProcessor.kt` 中的 `generateReadForType` 逻辑。
+- **添加类型**：在支持新字段类型时，请更新 `commonMain` 中的 `BasicSliceAdapters` 和 `FruitProcessor.kt` 中的 `generateReadForType` 逻辑。
 - **KSP 生成**：生成代码位于 `build/generated/ksp` 目录。如果 IDE 中符号缺失，建议运行 `./gradlew build`。
 - **包名完整性**：始终使用 `io.github.fruit` 包名。
 - **测试**：在 `commonTest` 中编写跨平台逻辑测试。如果测试环境下 KSP 未运行，请模拟生成的适配器。
@@ -57,4 +57,4 @@
 - **关键文件**：
     - `Fruit.kt`：主要 API。
     - `FruitProcessor.kt`：生成逻辑。
-    - `BasicPickAdapters.kt`：基本类型处理。
+    - `BasicSliceAdapters.kt`：基本类型处理。

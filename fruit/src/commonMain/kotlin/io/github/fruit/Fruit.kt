@@ -9,11 +9,11 @@ import kotlin.reflect.KClass
  * Kotlin Multiplatform HTML to Object Binder
  */
 class Fruit(
-    private val factories: List<PickAdapterFactory> = emptyList()
+    private val factories: List<SliceAdapterFactory> = emptyList()
 ) {
-    private val adapterCache = mutableMapOf<KClass<*>, PickAdapter<*>>()
+    private val adapterCache = mutableMapOf<KClass<*>, SliceAdapter<*>>()
 
-    fun <T : Any> registerAdapter(clazz: KClass<T>, adapter: PickAdapter<T>) {
+    fun <T : Any> registerSliceAdapter(clazz: KClass<T>, adapter: SliceAdapter<T>) {
         adapterCache[clazz] = adapter
     }
 
@@ -23,14 +23,14 @@ class Fruit(
     }
 
     fun <T : Any> fromHtml(element: Element, clazz: KClass<T>): T? {
-        val adapter = getAdapter(clazz)
+        val adapter = getSliceAdapter(clazz)
         return adapter.read(element)
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun <T : Any> getAdapter(clazz: KClass<T>): PickAdapter<T> {
+    fun <T : Any> getSliceAdapter(clazz: KClass<T>): SliceAdapter<T> {
         val cached = adapterCache[clazz]
-        if (cached != null) return cached as PickAdapter<T>
+        if (cached != null) return cached as SliceAdapter<T>
 
         for (factory in factories) {
             val adapter = factory.create<T>(this, clazz)
@@ -50,12 +50,12 @@ class Fruit(
     }
 }
 
-interface PickAdapter<T> {
+interface SliceAdapter<T> {
     fun read(element: Element, css: String = "", attr: String = Attrs.TEXT, ownText: Boolean = false): T?
 }
 
-interface PickAdapterFactory {
-    fun <T> create(fruit: Fruit, type: Any): PickAdapter<T>?
+interface SliceAdapterFactory {
+    fun <T> create(fruit: Fruit, type: Any): SliceAdapter<T>?
 }
 
 interface RawResponseHolder {

@@ -1,7 +1,7 @@
 package io.github.fruit.sample.ksp
 
 import io.github.fruit.Fruit
-import io.github.fruit.registerGeneratedAdapters
+import io.github.fruit.registerGeneratedSliceAdapters
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -24,7 +24,7 @@ class GeneratedAdaptersTest {
         """.trimIndent()
 
         val fruit = Fruit().apply {
-            registerGeneratedAdapters()
+            registerGeneratedSliceAdapters()
         }
 
         val result = fruit.fromHtml(html, GeneratedNews::class)

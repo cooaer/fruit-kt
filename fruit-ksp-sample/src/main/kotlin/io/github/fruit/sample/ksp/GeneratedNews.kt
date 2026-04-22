@@ -2,9 +2,9 @@ package io.github.fruit.sample.ksp
 
 import io.github.fruit.RawResponseHolder
 import io.github.fruit.annotations.Pick
-import io.github.fruit.annotations.Pulp
+import io.github.fruit.annotations.Slice
 
-@Pulp(".article")
+@Slice(".article")
 data class GeneratedNews(
     override val rawResponse: String = "",
     @property:Pick("h1")
@@ -17,13 +17,13 @@ data class GeneratedNews(
     val meta: Meta? = null,
 ) : RawResponseHolder {
 
-    @Pulp
+    @Slice
     data class Tag(
         @property:Pick
         val name: String = ""
     )
 
-    @Pulp
+    @Slice
     data class Meta(
         @property:Pick(".author")
         val author: String = ""
