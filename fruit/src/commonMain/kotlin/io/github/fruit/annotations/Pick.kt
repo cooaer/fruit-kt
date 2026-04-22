@@ -1,6 +1,6 @@
 package io.github.fruit.annotations
 
-@Target(AnnotationTarget.PROPERTY, AnnotationTarget.CLASS)
+@Target(AnnotationTarget.PROPERTY)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class Pick(
     val value: String = "",
