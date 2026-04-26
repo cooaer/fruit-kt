@@ -1,15 +1,18 @@
 # Gradle
 .gradle/
 build/
+out/
 
 # Kotlin / KMP
 .kotlin/
 kotlin-js-store/
+bin/
 
 # Android
 local.properties
 .externalNativeBuild/
 .cxx/
+captures/
 *.keystore
 *.jks
 *.apk
@@ -22,8 +25,12 @@ local.properties
 .idea/modules.xml
 .idea/workspace.xml
 .idea/tasks.xml
+.idea/usage.statistics.xml
 .idea/navEditor.xml
 .idea/assetWizard.settings.xml
+.idea/deviceManager.xml
+.idea/markdown.xml
+.idea/migrations.xml
 .idea/dictionaries/
 .idea/libraries/
 .idea/caches/
@@ -40,6 +47,9 @@ DerivedData/
 # OS
 .DS_Store
 Thumbs.db
+
+# Logs
+*.log
 
 # KSP Generated (Included in build/, but explicitly listed for clarity)
 build/generated/ksp/
